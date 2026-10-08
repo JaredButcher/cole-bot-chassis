@@ -87,7 +87,7 @@ The upstream README only covers the ESP32-S3. This table records what was checke
 
 ```cpp
 // interfaces/include/colebot/i_esc.h
-namespace colebot {
+namespace cb {
 
 enum class DshotMode : uint8_t { k150, k300, k600, k1200 };
 enum class EscRxStatus : uint8_t { kOk, kIdle, kNoReply, kFraming, kBadGcr, kBadCrc };
@@ -116,7 +116,7 @@ class IEsc {
   virtual void holdLineLow() = 0;                    // end() and pull the line low until the next begin() (AM32 bootloader release)
 };
 
-}  // namespace colebot
+}  // namespace cb
 ```
 
 - **`AlfredoEsc`** (platform) is constructed with its GPIO. `begin()` maps `EscConfig` onto `AlfredoDShot::begin(pin, mode, true, poles)` + `setPushPull()`. The other methods are one-line forwards with enum mapping.

@@ -5,7 +5,7 @@
 
 #include "colebot/i_esc.h"
 
-namespace colebot {
+namespace cb {
 
 class MockEsc : public IEsc {
  public:
@@ -22,4 +22,4 @@ class MockEsc : public IEsc {
   MOCK_METHOD(void, holdLineLow, (), (override));
 };
 
-}  // namespace colebot
+}  // namespace cb

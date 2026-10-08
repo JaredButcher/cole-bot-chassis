@@ -4,7 +4,7 @@
 #include "esp_console.h"
 #include "esp_err.h"
 
-namespace colebot {
+namespace cb {
 
 void startServiceConsole() {
   esp_console_repl_t* repl = nullptr;
@@ -19,4 +19,4 @@ void startServiceConsole() {
   ESP_ERROR_CHECK(esp_console_start_repl(repl));
 }
 
-}  // namespace colebot
+}  // namespace cb

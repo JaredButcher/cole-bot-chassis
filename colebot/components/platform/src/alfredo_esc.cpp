@@ -3,7 +3,7 @@
 
 #include "AlfredoDShot.h"
 
-namespace colebot {
+namespace cb {
 
 namespace {
 
@@ -83,4 +83,4 @@ void AlfredoEsc::holdLineLow() {
   AlfredoDShot::releaseBootloader(gpio_, 0);  // pulls low and returns; the caller times the hold
 }
 
-}  // namespace colebot
+}  // namespace cb

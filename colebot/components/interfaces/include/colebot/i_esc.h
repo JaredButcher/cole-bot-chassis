@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-namespace colebot {
+namespace cb {
 
 enum class DshotMode : uint8_t { k150, k300, k600, k1200 };
 enum class EscRxStatus : uint8_t { kOk, kIdle, kNoReply, kFraming, kBadGcr, kBadCrc };
@@ -33,4 +33,4 @@ class IEsc {
   virtual void holdLineLow() = 0;                    // end() and pull the line low until the next begin() (AM32 bootloader release)
 };
 
-}  // namespace colebot
+}  // namespace cb

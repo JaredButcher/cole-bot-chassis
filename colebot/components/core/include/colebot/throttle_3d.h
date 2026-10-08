@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-namespace colebot {
+namespace cb {
 
 // Maps a signed throttle in [-1.0, 1.0] to an AM32 3D-mode DShot value:
 //   0            stop (also for 0, NaN)
@@ -13,4 +13,4 @@ namespace colebot {
 // AlfredoDShot Rotini_V4_Telemetry example, which takes percent.
 uint16_t throttleTo3dDshot(float throttle);
 
-}  // namespace colebot
+}  // namespace cb

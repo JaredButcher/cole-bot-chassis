@@ -9,7 +9,7 @@
 // so the library and its Arduino shim stay out of every other translation unit.
 class AlfredoDShot;
 
-namespace colebot {
+namespace cb {
 
 // IEsc over one AlfredoDShot instance, bidirectional, on one GPIO.
 class AlfredoEsc final : public IEsc {
@@ -40,4 +40,4 @@ class AlfredoEsc final : public IEsc {
   AlfredoDShot* dshot_;  // owned; heap-allocated once at construction
 };
 
-}  // namespace colebot
+}  // namespace cb

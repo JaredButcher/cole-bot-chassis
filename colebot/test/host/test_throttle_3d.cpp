@@ -6,7 +6,7 @@
 
 #include "colebot/throttle_3d.h"
 
-namespace colebot {
+namespace cb {
 namespace {
 
 TEST(Throttle3dTest, ZeroAndNanStop) {
@@ -48,4 +48,4 @@ TEST(Throttle3dTest, MatchesLibraryExample) {
 }
 
 }  // namespace
-}  // namespace colebot
+}  // namespace cb

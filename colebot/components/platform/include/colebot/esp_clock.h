@@ -3,7 +3,7 @@
 
 #include "colebot/i_clock.h"
 
-namespace colebot {
+namespace cb {
 
 // IClock over esp_timer (µs since boot).
 class EspClock final : public IClock {
@@ -11,4 +11,4 @@ class EspClock final : public IClock {
   int64_t nowUs() const override;
 };
 
-}  // namespace colebot
+}  // namespace cb

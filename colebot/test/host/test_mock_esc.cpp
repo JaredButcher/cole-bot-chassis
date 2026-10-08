@@ -8,7 +8,7 @@
 #include "mock_clock.h"
 #include "mock_esc.h"
 
-namespace colebot {
+namespace cb {
 namespace {
 
 using ::testing::Return;
@@ -32,4 +32,4 @@ TEST(MockClockTest, ReturnsCannedTime) {
 }
 
 }  // namespace
-}  // namespace colebot
+}  // namespace cb

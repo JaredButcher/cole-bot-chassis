@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace colebot {
+namespace cb {
 
 namespace {
 constexpr uint16_t kReverseMin = 48;
@@ -19,4 +19,4 @@ uint16_t throttleTo3dDshot(float throttle) {
   return static_cast<uint16_t>((throttle > 0.0f ? kForwardMin : kReverseMin) + steps);
 }
 
-}  // namespace colebot
+}  // namespace cb

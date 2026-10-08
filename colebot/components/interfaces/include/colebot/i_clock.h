@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-namespace colebot {
+namespace cb {
 
 // Monotonic time source. Safe to call from any task.
 class IClock {
@@ -12,4 +12,4 @@ class IClock {
   virtual int64_t nowUs() const = 0;
 };
 
-}  // namespace colebot
+}  // namespace cb

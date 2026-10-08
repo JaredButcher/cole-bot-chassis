@@ -3,8 +3,8 @@
 
 #include "esp_timer.h"
 
-namespace colebot {
+namespace cb {
 
 int64_t EspClock::nowUs() const { return esp_timer_get_time(); }
 
-}  // namespace colebot
+}  // namespace cb

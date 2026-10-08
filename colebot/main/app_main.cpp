@@ -13,5 +13,5 @@ constexpr const char* kTag = "colebot";
 
 extern "C" void app_main() {
   ESP_LOGI(kTag, "colebot chassis controller %s", esp_app_get_description()->version);
-  colebot::startServiceConsole();
+  cb::startServiceConsole();
 }

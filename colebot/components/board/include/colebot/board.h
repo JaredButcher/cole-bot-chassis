@@ -10,7 +10,7 @@
 
 #include <cstdint>
 
-namespace colebot::board {
+namespace cb::board {
 
 // ---- DShot ESCs (one bidirectional pin each, external pull-up) ----
 inline constexpr int kDshotLeftGpio = 2;
@@ -53,4 +53,4 @@ inline constexpr uint8_t kDefaultEthIp[4] = {192, 168, 50, 2};
 inline constexpr uint8_t kDefaultEthPrefixLen = 24;
 inline constexpr uint16_t kDefaultAgentPort = 8888;
 
-}  // namespace colebot::board
+}  // namespace cb::board

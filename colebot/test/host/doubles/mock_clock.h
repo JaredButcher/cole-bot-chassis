@@ -5,11 +5,11 @@
 
 #include "colebot/i_clock.h"
 
-namespace colebot {
+namespace cb {
 
 class MockClock : public IClock {
  public:
   MOCK_METHOD(int64_t, nowUs, (), (const, override));
 };
 
-}  // namespace colebot
+}  // namespace cb
