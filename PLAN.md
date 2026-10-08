@@ -185,7 +185,7 @@ colebot/
 │   ├── platform/                # ESP-IDF / micro-ROS implementations: AlfredoEsc, EspClock, NvsConfigStore,
 │   │                            #   EthW5500Interface, WifiStaInterface, MicroRosAgentLink, RosNode,
 │   │                            #   MotorTask, RosTask
-│   └── console/                 # esp_console + argtable glue -> core ConsoleCommands
+│   └── service_console/         # esp_console + argtable glue -> core ConsoleCommands (IDF already has a `console` component)
 ├── app-colcon.meta              # micro-ROS build options (entity counts, transport, MTU)
 └── test/
     └── host/                    # plain-CMake host tests (see §7.9)
@@ -202,7 +202,7 @@ ros/                             # colcon workspace source folder (host side)
 
 **Dependency rule:**
 - `core` depends only on `interfaces` and the C++ standard library.
-- `platform` and `console` depend on `core`, `interfaces`, ESP-IDF and (`platform` only) micro-ROS.
+- `platform` and `service_console` depend on `core`, `interfaces`, ESP-IDF and (`platform` only) micro-ROS.
 - Nothing depends on `platform` except `main`.
 
 The host test build enforces this: if a `core` file includes an IDF or micro-ROS header, it fails to compile.
@@ -319,34 +319,35 @@ Rules:
 
 ## 6. Sprint 0 — Setup
 
-- [ ] **ESP-IDF version.** AlfredoDShot requires Arduino core 3.x, which is built on ESP-IDF 5.x. It uses the RMT TX `io_loop_back` / `io_od_mode` flags to share one pad between TX and RX. Those flags are an ESP-IDF 5.x feature, so we should not move to 6.x without checking them. `.vscode/settings.json` points to v5.2.1 and the devcontainer uses `espressif/idf:latest`. Pin both to the same **5.5.x** release (the version Arduino core 3.3 uses, and one micro-ROS is tested with).
-- [ ] Set `IDF_TARGET=esp32c6` and add `sdkconfig.defaults`. Include `CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y` so the console runs on the DevKitC-1's native **USB** port.
-- [ ] Replace the hello-world template with a C++ `app_main.cpp` (`extern "C" void app_main()`). Remove `pytest_hello_world.py` and `sdkconfig.ci`.
-- [ ] Replace the root `.gitignore` (currently a Rust template) with one covering:
+- [x] **ESP-IDF version.** AlfredoDShot requires Arduino core 3.x, which is built on ESP-IDF 5.x. It uses the RMT TX `io_loop_back` / `io_od_mode` flags to share one pad between TX and RX. Those flags are an ESP-IDF 5.x feature, so we should not move to 6.x without checking them. `.vscode/settings.json` points to v5.2.1 and the devcontainer uses `espressif/idf:latest`. Pin both to the same **5.5.x** release (the version Arduino core 3.3 uses, and one micro-ROS is tested with). Pinned to **v5.5.5**.
+- [x] Set `IDF_TARGET=esp32c6` and add `sdkconfig.defaults`. Include `CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y` so the console runs on the DevKitC-1's native **USB** port.
+- [x] Replace the hello-world template with a C++ `app_main.cpp` (`extern "C" void app_main()`). Remove `pytest_hello_world.py` and `sdkconfig.ci`.
+- [x] Replace the root `.gitignore` (currently a Rust template) with one covering:
   - ESP-IDF: `build/`, `sdkconfig`, `sdkconfig.old`, `managed_components/`
   - colcon: `ros/build/`, `ros/install/`, `ros/log/`
 - [x] **Remove the `colebot-protocol` submodule** (`colebot/components/colebot_protocol` and its `.gitmodules` entry).
 - [ ] Archive the `colebot-protocol` repo on GitHub.
-- [ ] **Integrate AlfredoDShot** (tasks A1–A4; full plan in [`docs/plans/alfredo-dshot.md`](docs/plans/alfredo-dshot.md)). Add the upstream repo unmodified as a submodule pinned to `v1.1`, plus a wrapper component with an IDF `CMakeLists.txt` and a minimal `compat/Arduino.h` shim. No fork.
+- [x] **Integrate AlfredoDShot** (tasks A1–A4; full plan in [`docs/plans/alfredo-dshot.md`](docs/plans/alfredo-dshot.md)). Add the upstream repo unmodified as a submodule pinned to `v1.1`, plus a wrapper component with an IDF `CMakeLists.txt` and a minimal `compat/Arduino.h` shim. No fork.
 - [ ] **Integrate micro-ROS:**
   - Add `micro_ros_espidf_component` as a submodule at `components/micro_ros_espidf_component`, pinned to a commit on its `jazzy` branch.
   - Add the build dependencies to the devcontainer's IDF Python environment: `pip install catkin_pkg colcon-common-extensions lark`. Build in a shell where ROS is **not** sourced.
   - Add `app-colcon.meta` (§4.3).
   - Note: the component's first build clones the micro-ROS sources by branch and caches them in the component directory. Builds are only reproducible while that cache is kept. Record the cloned commits in the PR that bumps the component.
   - Done when an int32 publisher example reaches a Jazzy agent over WiFi from the C6.
+  - Status: submodule pinned (`5cd71f5`), `app-colcon.meta` added, devcontainer dependencies added, and `libmicroros` builds for the C6. The on-device test is still to do.
 - [ ] **W5500 bring-up:** wire the module to GP-SPI2. Done when the C6 gets a link and IP over Ethernet and the int32 example reaches an agent over Ethernet.
-- [ ] Create the `interfaces/`, `core/`, `platform/`, and `console/` component skeletons. Create the `test/host/` CMake project (GoogleTest + GoogleMock via `FetchContent`) with one passing placeholder test, so the dependency rule in §3.4 is enforced from day one.
-- [ ] Define the pin map in `components/board/`:
+- [x] Create the `interfaces/`, `core/`, `platform/`, and `service_console/` component skeletons. Create the `test/host/` CMake project (GoogleTest + GoogleMock via `FetchContent`) with one passing placeholder test, so the dependency rule in §3.4 is enforced from day one.
+- [x] Define the pin map in `components/board/` (proposed defaults; confirm against the wiring):
   - two DShot GPIOs
   - W5500 SPI (SCLK, MOSI, MISO, CS, INT, RST)
   - hardware e-stop input (not a strapping pin)
   - spare pins reserved for I²C (IMU) and ADC (battery)
-- [ ] **`ros/` workspace skeleton:**
+- [x] **`ros/` workspace skeleton:**
   - `colebot_description` with a placeholder URDF
   - `colebot_bringup` with mock hardware, so `ros2 launch colebot_bringup bringup.launch.py use_mock_hardware:=true` brings up `diff_drive_controller` and responds to `cmd_vel`
   - a ROS devcontainer (`ros:jazzy`) or documented host setup
   - `colcon test` passing with `ament_lint_auto`
-- [ ] Agent setup: Docker `microros/micro-ros-agent:jazzy` run with UDP 8888 and discovery enabled, started from the bringup launch file or a compose file.
+- [x] Agent setup: Docker `microros/micro-ros-agent:jazzy` run with UDP 8888 and discovery enabled, started from a compose file (`ros/agent/compose.yaml`).
 
 ## 7. Sprint 1 — Core Features
 
@@ -396,8 +397,8 @@ throttle = kv·ω_cmd + ks·sign(ω_cmd) + kp·e + ki·∫e      e = ω_cmd − 
   - **Fail-safe polarity.** The input reads "released" only while the contact is closed, e.g. a normally-closed contact to GND with a pull-up: low = released, high = pressed. A broken wire or unplugged connector reads as pressed.
   - `DriveController` samples it every motor tick (1 kHz). The first "pressed" sample activates the `HARDWARE` trip, with no debounce on entry. The trip ends only after the input has read "released" continuously for 20 ms.
   - **Releasing the button doesn't restart anything.** The latch stays until `clear_estop`, and then the zero-command rule applies. This follows the usual e-stop rule that resetting the stop must not restart motion by itself.
-  - **ESC restart.** While the button is pressed the ESCs are unpowered, so their telemetry reads `NO_REPLY`. Diagnostics report this as "unpowered (hardware e-stop)", not as a link fault. When power returns, AM32 boots again, but the ESP32 has kept running, so the startup bootloader release (§7.1) has to be repeated: when the `HARDWARE` trip ends, each `Motor` restarts its ESC (`IEsc::restart`: `end()`, hold the line low, `begin()`, wait for `isArmed()`). The two holds overlap, as at startup. An `ESC_RESTART` trip stays active until both ESCs are armed again, so `clear_estop` is refused until then. Bring-up step B8 checks whether AM32 really needs this.
-    - The hold blocks for up to 2.5 s (the library uses `delay()`). It runs in the motor task, which has nothing else to do while the ESCs restart. The e-stop input is sampled again before `ESC_RESTART` ends, so a second press during the restart is still caught.
+  - **ESC restart.** While the button is pressed the ESCs are unpowered, so their telemetry reads `NO_REPLY`. Diagnostics report this as "unpowered (hardware e-stop)", not as a link fault. When power returns, AM32 boots again, but the ESP32 has kept running, so the startup bootloader release (§7.1) has to be repeated: when the `HARDWARE` trip ends, both `Motor`s call `IEsc::holdLineLow()`, wait 2.5 s, call `begin()` again and wait for `isArmed()`. Both lines are held low over the same 2.5 s, as at startup. An `ESC_RESTART` trip stays active until both ESCs are armed again, so `clear_estop` is refused until then. Bring-up step B8 checks whether AM32 really needs this.
+    - The wait is a non-blocking step in the motor task, timed with `IClock`, so the e-stop input keeps being sampled throughout. A second press during the restart starts it over.
   - The ESP32 must stay powered while the e-stop is pressed (§8).
 - **No arming or ownership protocol**, following ROS convention. Activating and deactivating the ros2_control hardware component or controllers is the host-side "enable": when they stop, the command stream stops and the timeout stops the wheels. Command sources are combined on the host (`twist_mux`). The firmware has exactly one command source (ROS). The console can e-stop but cannot drive (bench driving uses the DShot bring-up mode).
 
@@ -535,7 +536,7 @@ The plan follows the usual ROS 2 practice:
 | Firmware `core` | Plain CMake + GoogleTest/GMock (`FetchContent`) in `colebot/test/host/`, with the `Mock*` / `Fake*` doubles. Not a colcon package: it must build without ROS or IDF, also on Windows | Every commit |
 | Firmware platform (`RosNode`, network, `AlfredoEsc`) | Kept thin; covered by the hardware-in-the-loop tests | — |
 | `colebot_cli` | pytest for the pure modules: status formatting from canned diagnostics, argument validation, step-response metrics on synthetic responses | Every commit |
-| `ros/` packages | `colcon test` with `ament_lint_auto` + `ament_lint_common`; a `launch_testing` check that the URDF and controllers load with `use_mock_hardware:=true` | Every commit |
+| `ros/` packages | `colcon test` with `ament_lint_auto` + `ament_lint_common` (`ament_copyright` skipped: it only accepts the full GPL block, and the project uses SPDX tags); a `launch_testing` check that the URDF and controllers load with `use_mock_hardware:=true` | Every commit |
 | Host stack without the robot (SIL) | `colebot_fake_chassis` implements the §4 contract: it follows commands with a first-order speed response, integrates positions, and implements the timeout, e-stop services and parameters. `launch_testing`: `cmd_vel` in → `diff_drive_controller` → topics → fake → odometry out. Also: the `wheel_states` rate follows `control_rate`, and drops to `state_idle_hz` when commands stop. Each `ros2 colebot` verb runs against the fake: `status` finds it, `drive` moves the odometry, an e-stop/clear round trip, `config set --save`, and `tune step` against the fake's first-order response, restoring `diff_drive_controller` afterwards | Every commit |
 | Firmware + host on the robot (HIL) | `launch_testing` against the real agent and robot, automating the §7.10 criteria that don't need a person | Before merging firmware changes |
 
@@ -546,7 +547,7 @@ The plan follows the usual ROS 2 practice:
   - waiting for arming
   - direction tracking through a reversal
   - position integration across a reversal and across invalid samples
-  - ESC restart sequence (`restart`, then waiting for `isArmed()`) with zero output throughout
+  - ESC restart sequence (`holdLineLow()`, 2.5 s, `begin()`, then waiting for `isArmed()`) with zero output throughout
   - invalid telemetry status
 - **`PiController`:**
   - feedforward only

@@ -1,5 +1,5 @@
 {
-	"name": "ESP-IDF QEMU",
+	"name": "colebot firmware (ESP-IDF v5.5.5)",
 	"build": {
 		"dockerfile": "Dockerfile"
 	},

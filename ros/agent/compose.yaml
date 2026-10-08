@@ -1,0 +1,12 @@
+# micro-ROS agent for the chassis firmware (PLAN.md §5, §7.6).
+#   docker compose -f ros/agent/compose.yaml up -d
+# Host networking so the agent's DDS traffic joins the host's ROS graph and the
+# firmware can reach UDP 8888 and agent discovery (UDP 7400) on every interface.
+# Keep the image tag on the same ROS distro as the host and firmware.
+services:
+  micro_ros_agent:
+    image: microros/micro-ros-agent:jazzy
+    network_mode: host
+    ipc: host
+    command: ["udp4", "--port", "8888", "--discovery", "7400"]
+    restart: unless-stopped

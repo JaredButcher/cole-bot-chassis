@@ -1,0 +1,22 @@
+{
+	"name": "colebot host (ROS 2 Jazzy)",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/ros,type=bind",
+	"workspaceFolder": "/workspaces/ros",
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"terminal.integrated.defaultProfile.linux": "bash"
+			},
+			"extensions": [
+				"ms-python.python",
+				"ms-vscode.cpptools",
+				"redhat.vscode-xml"
+			]
+		}
+	},
+	"postCreateCommand": "rosdep update && rosdep install --from-paths . --ignore-src -y",
+	"runArgs": ["--network=host", "--ipc=host"]
+}

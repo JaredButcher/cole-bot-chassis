@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<!--
+  Cole bot chassis. Placeholder geometry: replace the chassis size and wheel
+  separation with values measured from model/colebot_asm.FCStd. Each side's
+  chain-driven wheels are modeled as one wheel joint.
+-->
+<robot name="colebot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:arg name="use_mock_hardware" default="false"/>
+
+  <xacro:property name="wheel_radius" value="0.0762"/>     <!-- 6 in HiGrip -->
+  <xacro:property name="wheel_width" value="0.038"/>
+  <xacro:property name="wheel_separation" value="0.30"/>   <!-- TODO: measure from CAD -->
+  <xacro:property name="chassis_length" value="0.40"/>     <!-- TODO: measure from CAD -->
+  <xacro:property name="chassis_width" value="0.24"/>      <!-- TODO: measure from CAD -->
+  <xacro:property name="chassis_height" value="0.06"/>     <!-- TODO: measure from CAD -->
+
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 ${chassis_height / 2}"/>
+      <geometry><box size="${chassis_length} ${chassis_width} ${chassis_height}"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${chassis_height / 2}"/>
+      <geometry><box size="${chassis_length} ${chassis_width} ${chassis_height}"/></geometry>
+    </collision>
+  </link>
+
+  <xacro:macro name="wheel" params="side y_sign">
+    <link name="${side}_wheel_link">
+      <visual>
+        <origin rpy="${pi / 2} 0 0"/>
+        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
+      </visual>
+      <collision>
+        <origin rpy="${pi / 2} 0 0"/>
+        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
+      </collision>
+    </link>
+    <joint name="${side}_wheel_joint" type="continuous">
+      <parent link="base_link"/>
+      <child link="${side}_wheel_link"/>
+      <origin xyz="0 ${y_sign * wheel_separation / 2} 0"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:wheel side="left" y_sign="1"/>
+  <xacro:wheel side="right" y_sign="-1"/>
+
+  <xacro:include filename="$(find colebot_description)/urdf/colebot.ros2_control.xacro"/>
+  <xacro:colebot_ros2_control use_mock_hardware="$(arg use_mock_hardware)"/>
+</robot>

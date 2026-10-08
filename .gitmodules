@@ -1,0 +1,7 @@
+[submodule "colebot/components/alfredo_dshot/AlfredoDShot"]
+	path = colebot/components/alfredo_dshot/AlfredoDShot
+	url = https://github.com/AlfredoSystems/AlfredoDShot.git
+[submodule "colebot/components/micro_ros_espidf_component"]
+	path = colebot/components/micro_ros_espidf_component
+	url = https://github.com/micro-ROS/micro_ros_espidf_component.git
+	branch = jazzy

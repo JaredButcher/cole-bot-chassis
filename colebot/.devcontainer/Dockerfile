@@ -1,10 +1,15 @@
-ARG DOCKER_TAG=latest
+# Keep in step with idf.currentSetup in .vscode/settings.json (PLAN.md §6).
+ARG DOCKER_TAG=v5.5.5
 FROM espressif/idf:${DOCKER_TAG}
 
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
 RUN apt-get update -y && apt-get install udev -y
+
+# micro_ros_espidf_component builds libmicroros with colcon inside the IDF Python environment.
+RUN bash -c '. /opt/esp/idf/export.sh > /dev/null 2>&1 \
+    && pip install --no-cache-dir catkin_pkg colcon-common-extensions lark'
 
 RUN echo "source /opt/esp/idf/export.sh > /dev/null 2>&1" >> ~/.bashrc
 

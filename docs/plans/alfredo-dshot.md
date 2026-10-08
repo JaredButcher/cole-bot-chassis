@@ -113,7 +113,7 @@ class IEsc {
   virtual EscLinkStats linkStats() const = 0;
   virtual void resetLinkStats() = 0;
   virtual uint16_t echoPulses() const = 0;           // wiring check, 31 = good
-  virtual void restart(uint32_t hold_ms) = 0;        // after ESC power loss: end(), hold low, begin() with the last config
+  virtual void holdLineLow() = 0;                    // end() and pull the line low until the next begin() (AM32 bootloader release)
 };
 
 }  // namespace colebot
@@ -121,7 +121,7 @@ class IEsc {
 
 - **`AlfredoEsc`** (platform) is constructed with its GPIO. `begin()` maps `EscConfig` onto `AlfredoDShot::begin(pin, mode, true, poles)` + `setPushPull()`. The other methods are one-line forwards with enum mapping.
 - `static void AlfredoEsc::releaseBootloader(std::initializer_list<gpio_num_t> pins)` releases every pin in one 2.5 s window: it calls the library with `holdMs = 0` for all but the last pin.
-- `restart(hold_ms)` is for the hardware e-stop (`PLAN.md` §7.3): the ESCs lose power while the ESP32 keeps running. It runs `end()`, then the same bootloader release as at startup for this pin (`hold_ms` works like the library's `holdMs`, so the caller overlaps both ESCs' holds: 0 for the first, 2500 for the second), then `begin()` with the last `EscConfig`.
+- `holdLineLow()` is for the hardware e-stop (`PLAN.md` §7.3): the ESCs lose power while the ESP32 keeps running. It calls `end()` and then `AlfredoDShot::releaseBootloader(pin, 0)`, which pulls the line low and returns at once. The caller holds both lines low together for 2.5 s without blocking, then calls `begin()` again. The library's own `holdMs` wait isn't used here, because it blocks the calling task.
 - `MockEsc` (gMock) mirrors `IEsc` 1:1. There is no `FakeEsc` in sprint 1; add one only if a test needs ESC state, e.g. simulated eRPM that follows the throttle.
 - The 3D signed-throttle mapping is **not** in `IEsc`. It's a pure helper in `core` used by `Motor`, so it's tested without any double.
 - EDT getters (temperature, voltage, current) are left out of `IEsc` until sprint 2 needs them. Adding methods to an interface is cheap.
@@ -139,7 +139,7 @@ This runs before `Motor` and `DriveController` exist, so it uses a Kconfig optio
 | B5   | Both ESCs at 1 kHz for 60 s while logging from another task                                   | No missed loop deadlines; loss < 1 % per ESC            |
 | B6   | `command(k3dModeOn)` + `command(kSaveSettings)` while stopped, then power-cycle the ESC        | 3D mode persists (only needed if not set via configurator) |
 | B7   | Calibration sweep, wheels off the ground: step throttle both directions, log steady wheel speed per step | Data gives `kv`, `ks` and the minimum speed for the velocity loop (`PLAN.md` §7.2) |
-| B8   | With the ESP32 running and the loop at zero throttle, press the hardware e-stop (ESC power off), release it, watch for ~3 s, then call `restart()` | Record whether the ESCs re-arm **without** `restart()` (does AM32 stay in its bootloader?). With `restart()` both arm and report `kOk` |
+| B8   | With the ESP32 running and the loop at zero throttle, press the hardware e-stop (ESC power off), release it, watch for ~3 s, then run the restart sequence (`holdLineLow()` on both, 2.5 s, `begin()`) | Record whether the ESCs re-arm **without** the restart (does AM32 stay in its bootloader?). With it, both arm and report `kOk` |
 
 Signal wiring (pull-ups, series resistors) is out of scope for the software. If B2 or B3 fails, the result is reported as a hardware issue, with the README's troubleshooting table as the reference.
 
