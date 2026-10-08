@@ -38,8 +38,13 @@ add_subdirectory(${COMPONENTS_DIR}/board board)
 add_subdirectory(${COMPONENTS_DIR}/core core)
 
 add_executable(colebot_host_tests
-  test_throttle_3d.cpp
+  test_connection_manager.cpp
+  test_drive_controller.cpp
+  test_drive_math.cpp
   test_mock_esc.cpp
+  test_motor.cpp
+  test_throttle_3d.cpp
+  test_wheel_command_handler.cpp
 )
 target_include_directories(colebot_host_tests PRIVATE doubles)
 target_link_libraries(colebot_host_tests PRIVATE colebot_core GTest::gmock_main)

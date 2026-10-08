@@ -132,13 +132,13 @@ Wherever it's reasonable, the firmware is split into C++ classes that implement 
 | ------------------- | ------------------------------------------------------------------------------ | ------------------------------------------- | ------------------------- | ----------------------- |
 | `IClock`            | Monotonic time in µs                                                           | `EspClock` (platform, `esp_timer`)          | `MockClock`               | `FakeClock`             |
 | `IEsc`              | One DShot ESC: `begin`, `send(value)`, `command`, `isArmed`, telemetry status / eRPM / age, link stats, `echoPulses`, push-pull | `AlfredoEsc` (platform, AlfredoDShot) | `MockEsc` | — |
-| `IMotor`            | Wheel velocity setpoint (rad/s) → velocity loop → ESC each tick; inversion, direction tracking, position integration, ESC restart after power loss; returns a `WheelSample` | `Motor` (core, uses `IEsc`, `IClock`) | `MockMotor` | — |
+| `IMotor`            | Wheel velocity setpoint (rad/s) → velocity loop → ESC each tick; inversion, direction tracking, position integration, ESC restart after power loss; returns a `WheelSample` | `Motor` (core, uses `IEsc`; the caller passes the time) | `MockMotor` | — |
 | `IDriveController`  | Per-wheel velocity setpoints, command timeout, e-stop latch (source + trips), ramp limit, state snapshot | `DriveController` (core, uses 2 × `IMotor`, `IClock`, `IEstopInput`) | `MockDriveController` | — |
 | `IEstopInput`       | Raw state of the hardware e-stop contact (`pressed()`)                        | `GpioEstopInput` (platform, GPIO)           | `MockEstopInput`          | `FakeEstopInput`        |
-| `IWheelFeedback`    | Latest and filtered velocity, accumulated position, telemetry validity and link health per wheel | `FeedbackStore` (core)                      | `MockWheelFeedback`       | —                       |
+| `IWheelFeedback`    | Latest `WheelSample` per wheel (filtered and raw velocity, position, validity, link health), handed from the motor task to other tasks | `FeedbackStore` (core)                      | `MockWheelFeedback`       | —                       |
 | `IConfigStore`      | Typed get / set / load / save of drive parameters                              | `NvsConfigStore` (platform, NVS)            | `MockConfigStore`         | `FakeConfigStore`       |
 | `INetworkInterface` | One network interface: `start` / `stop`, link up, has IP, make default route    | `EthW5500Interface`, `WifiStaInterface` (platform) | `MockNetworkInterface` | `FakeNetworkInterface` |
-| `IAgentLink`        | micro-ROS session over the current default interface: `probe(timeout)` (discover or ping), `open`, `close`, `ping` | `MicroRosAgentLink` (platform) | `MockAgentLink` | `FakeAgentLink` |
+| `IAgentLink`        | micro-ROS session over the current default interface: `probe(iface, timeout)` (discover, or ping the saved address for that interface), `open`, `close`, `ping` | `MicroRosAgentLink` (platform) | `MockAgentLink` | `FakeAgentLink` |
 
 **Test double naming.** The name comes from the interface with the `I` dropped, plus a prefix that says what kind of double it is:
 - **`Mock<Name>`** is a gMock class (`MOCK_METHOD`) used to set and verify expectations. Every interface has one.
@@ -156,6 +156,7 @@ Wherever it's reasonable, the firmware is split into C++ classes that implement 
 **Other core classes** that consume these interfaces:
 - `ConnectionManager`: the connecting / connected state machine (§5) over two `INetworkInterface`s and an `IAgentLink`. It tells `IDriveController` to stop when the session drops.
 - `WheelCommandHandler`: validates a decoded wheel command (joint-name matching, finite values, clamping) and forwards it to `IDriveController`. `RosNode` decodes the `JointState` message and calls it.
+- `StatePublishPolicy` and `LoopTimer`: when to publish `wheel_states` (§7.5), and the motor loop's period statistics for diagnostics.
 - `DiagnosticsBuilder`: turns `IWheelFeedback`, `IDriveController` and connection state into key/value status entries. `RosNode` copies them into `diagnostic_msgs`.
 - `ConsoleCommands`: service console handlers over the same interfaces, writing to an output sink.
 
@@ -412,7 +413,7 @@ throttle = kv·ω_cmd + ks·sign(ω_cmd) + kp·e + ki·∫e      e = ω_cmd − 
   - wheel ω (rad/s) = motor RPM / drive reduction × 2π / 60
 - **Direction:** telemetry RPM is unsigned. When the command changes sign at speed, AM32 first slows the motor down and then reverses it. So the sign cannot simply follow the command. Track a per-wheel "actual direction" that flips only once measured RPM drops below a small threshold after a sign change.
 - **Position:** integrate signed ω in the motor task at 1 kHz (double precision, radians). Because the position is accumulated on the MCU, lost `wheel_states` packets never lose distance. Invalid samples hold the last valid velocity for a short time, then count as zero and are flagged.
-- `FeedbackStore` keeps the latest sample, a light low-pass-filtered velocity, the accumulated position, a validity flag (stale or no telemetry → invalid), and link health from the library's `stats()` / `lossPercent()`. History and plotting come from `ros2 bag` / PlotJuggler, so there is no on-device ring buffer.
+- `Motor` keeps the low-pass-filtered velocity (the velocity loop uses it), the accumulated position, a validity flag (no valid telemetry within the hold time → invalid) and the ESC link stats in its `WheelSample`. `FeedbackStore` hands the latest sample of each wheel to the other tasks. History and plotting come from `ros2 bag` / PlotJuggler, so there is no on-device ring buffer.
 
 ### 7.5 micro-ROS node (`RosNode`)
 

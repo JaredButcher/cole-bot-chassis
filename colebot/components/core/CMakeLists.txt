@@ -2,7 +2,13 @@
 # (PLAN.md §3.4). The host test build compiles these same sources without ESP-IDF,
 # so an IDF include here fails the host build.
 set(COLEBOT_CORE_SRCS
+  "src/connection_manager.cpp"
+  "src/drive_controller.cpp"
+  "src/drive_math.cpp"
+  "src/feedback_store.cpp"
+  "src/motor.cpp"
   "src/throttle_3d.cpp"
+  "src/wheel_command_handler.cpp"
 )
 
 if(DEFINED ESP_PLATFORM)
