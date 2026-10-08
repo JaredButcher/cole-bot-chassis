@@ -79,7 +79,7 @@ The upstream README only covers the ESP32-S3. This table records what was checke
 | TX `io_loop_back` + `io_od_mode` flags       | Present in IDF 5.5; may warn as deprecated. **Re-check before any move to IDF 6.x** | Build             |
 | `gpio_ll_od_enable/disable(&GPIO, pin)` (push-pull mode) | Available in the C6 HAL                                          | Build; push-pull test only if used |
 | Busy-wait in `send()` (up to ~135 µs)        | Single core. Fine at 1 kHz, and the motor task is the highest priority       | Loop-timing check |
-| Interrupt latency vs. ~25 µs AM32 turnaround (push-pull only) | Flash writes can stall the ISR → `config save` only while disarmed | Bring-up B5 |
+| Interrupt latency vs. ~25 µs AM32 turnaround (push-pull only) | Flash writes can stall the ISR → `save_params` / `config save` only while stopped | Bring-up B5 |
 
 ## 4. `IEsc` and `AlfredoEsc`
 
@@ -103,7 +103,7 @@ struct EscLinkStats { uint32_t sent, ok, no_reply, framing, bad_gcr, bad_crc; };
 class IEsc {
  public:
   virtual ~IEsc() = default;
-  virtual bool begin(const EscConfig& config) = 0;   // (re)initialize; only while disarmed
+  virtual bool begin(const EscConfig& config) = 0;   // (re)initialize; only while stopped
   virtual void end() = 0;
   virtual bool send(uint16_t value) = 0;             // 0 = stop, 48..2047 throttle; true = fresh telemetry
   virtual void command(EscCommand cmd, uint8_t repeat = 6) = 0;
@@ -113,6 +113,7 @@ class IEsc {
   virtual EscLinkStats linkStats() const = 0;
   virtual void resetLinkStats() = 0;
   virtual uint16_t echoPulses() const = 0;           // wiring check, 31 = good
+  virtual void restart(uint32_t hold_ms) = 0;        // after ESC power loss: end(), hold low, begin() with the last config
 };
 
 }  // namespace colebot
@@ -120,13 +121,14 @@ class IEsc {
 
 - **`AlfredoEsc`** (platform) is constructed with its GPIO. `begin()` maps `EscConfig` onto `AlfredoDShot::begin(pin, mode, true, poles)` + `setPushPull()`. The other methods are one-line forwards with enum mapping.
 - `static void AlfredoEsc::releaseBootloader(std::initializer_list<gpio_num_t> pins)` releases every pin in one 2.5 s window: it calls the library with `holdMs = 0` for all but the last pin.
+- `restart(hold_ms)` is for the hardware e-stop (`PLAN.md` §7.3): the ESCs lose power while the ESP32 keeps running. It runs `end()`, then the same bootloader release as at startup for this pin (`hold_ms` works like the library's `holdMs`, so the caller overlaps both ESCs' holds: 0 for the first, 2500 for the second), then `begin()` with the last `EscConfig`.
 - `MockEsc` (gMock) mirrors `IEsc` 1:1. There is no `FakeEsc` in sprint 1; add one only if a test needs ESC state, e.g. simulated eRPM that follows the throttle.
 - The 3D signed-throttle mapping is **not** in `IEsc`. It's a pure helper in `core` used by `Motor`, so it's tested without any double.
 - EDT getters (temperature, voltage, current) are left out of `IEsc` until sprint 2 needs them. Adding methods to an interface is cheap.
 
 ## 5. Hardware bring-up (sprint 0 → early sprint 1)
 
-This runs before `Motor` and `DriveController` exist, so it uses a Kconfig option `COLEBOT_DSHOT_BRINGUP`. That makes `app_main` run a scripted sequence through `AlfredoEsc` and log the results, instead of starting the normal tasks. The option is removed or disabled once `dshot diag` in the CLI covers the same checks.
+This runs before `Motor` and `DriveController` exist, so it uses a Kconfig option `COLEBOT_DSHOT_BRINGUP`. That makes `app_main` run a scripted sequence through `AlfredoEsc` and log the results, instead of starting the normal tasks. Once the service console's `dshot diag` covers B2–B3, the option is kept only for the B7 calibration sweep.
 
 | Step | Check                                                                                         | Pass criteria                                           |
 | ---- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
@@ -136,6 +138,8 @@ This runs before `Motor` and `DriveController` exist, so it uses a Kconfig optio
 | B4   | 3D-mode check: forward ~10 % for 2 s, stop, reverse ~10 % for 2 s (motors unloaded)           | Correct directions; RPM plausible; loss < 1 %           |
 | B5   | Both ESCs at 1 kHz for 60 s while logging from another task                                   | No missed loop deadlines; loss < 1 % per ESC            |
 | B6   | `command(k3dModeOn)` + `command(kSaveSettings)` while stopped, then power-cycle the ESC        | 3D mode persists (only needed if not set via configurator) |
+| B7   | Calibration sweep, wheels off the ground: step throttle both directions, log steady wheel speed per step | Data gives `kv`, `ks` and the minimum speed for the velocity loop (`PLAN.md` §7.2) |
+| B8   | With the ESP32 running and the loop at zero throttle, press the hardware e-stop (ESC power off), release it, watch for ~3 s, then call `restart()` | Record whether the ESCs re-arm **without** `restart()` (does AM32 stay in its bootloader?). With `restart()` both arm and report `kOk` |
 
 Signal wiring (pull-ups, series resistors) is out of scope for the software. If B2 or B3 fails, the result is reported as a hardware issue, with the README's troubleshooting table as the reference.
 
@@ -161,7 +165,7 @@ What this means in practice:
 - Any firmware binary handed out must come with, or offer, the complete corresponding source. Keeping the repo public covers this.
 - New source files carry `// SPDX-License-Identifier: GPL-3.0-or-later`.
 - The license is no longer a reason to replace AlfredoDShot. `IEsc` still keeps such a swap local if one is ever wanted for technical reasons.
-- `colebot-protocol` never links AlfredoDShot and keeps its own license.
+- micro-ROS is linked into the same binary. It is Apache-2.0, which is compatible with GPL-3.0.
 
 ## 8. Work breakdown
 
@@ -171,7 +175,7 @@ What this means in practice:
 | A2 | Wrapper `CMakeLists.txt` + `compat/Arduino.h`                                  | `idf.py set-target esp32c6 build` succeeds                 |
 | A3 | `IEsc` + types in `interfaces/`; `MockEsc` in `test/host/doubles/`             | Host test project compiles a trivial `MockEsc` test        |
 | A4 | `AlfredoEsc` in `platform/` (+ `releaseBootloader` helper)                     | Builds; used by the bring-up mode                          |
-| A5 | `COLEBOT_DSHOT_BRINGUP` mode, run B1–B6 on hardware                            | All pass criteria met, results recorded in the PR          |
+| A5 | `COLEBOT_DSHOT_BRINGUP` mode, run B1–B8 on hardware                            | All pass criteria met, results recorded in the PR          |
 | A6 | (Optional) upstream PR for `#ifdef ARDUINO` + IDF CMake                        | PR opened                                                  |
 
 A1–A4 need no hardware. A5 needs the robot (ESCs on AM32 with 3D mode, motors unloaded).
