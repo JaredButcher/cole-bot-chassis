@@ -1,4 +1,0 @@
-[submodule "colebot/components/colebot_protocol"]
-	path = colebot/components/colebot_protocol
-	url = ../colebot-protocol.git
-	branch = main

@@ -325,7 +325,8 @@ Rules:
 - [ ] Replace the root `.gitignore` (currently a Rust template) with one covering:
   - ESP-IDF: `build/`, `sdkconfig`, `sdkconfig.old`, `managed_components/`
   - colcon: `ros/build/`, `ros/install/`, `ros/log/`
-- [ ] **Remove the `colebot-protocol` submodule** (`git rm colebot/components/colebot_protocol`, drop the `.gitmodules` entry) and archive the `colebot-protocol` repo.
+- [x] **Remove the `colebot-protocol` submodule** (`colebot/components/colebot_protocol` and its `.gitmodules` entry).
+- [ ] Archive the `colebot-protocol` repo on GitHub.
 - [ ] **Integrate AlfredoDShot** (tasks A1–A4; full plan in [`docs/plans/alfredo-dshot.md`](docs/plans/alfredo-dshot.md)). Add the upstream repo unmodified as a submodule pinned to `v1.1`, plus a wrapper component with an IDF `CMakeLists.txt` and a minimal `compat/Arduino.h` shim. No fork.
 - [ ] **Integrate micro-ROS:**
   - Add `micro_ros_espidf_component` as a submodule at `components/micro_ros_espidf_component`, pinned to a commit on its `jazzy` branch.
