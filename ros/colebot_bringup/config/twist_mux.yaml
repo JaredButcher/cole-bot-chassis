@@ -1,0 +1,24 @@
+# Velocity command sources, highest priority wins (PLAN.md §7.6).
+# Output: cmd_vel_out, remapped to diff_drive_controller's cmd_vel in the launch file.
+twist_mux:
+  ros__parameters:
+    use_stamped: true  # Jazzy diff_drive_controller only takes TwistStamped
+    topics:
+      teleop:
+        topic: cmd_vel/teleop
+        timeout: 0.5
+        priority: 100
+      cli:  # ros2 colebot drive (§7.7)
+        topic: cmd_vel/cli
+        timeout: 0.5
+        priority: 90
+      navigation:
+        topic: cmd_vel/nav
+        timeout: 0.5
+        priority: 10
+    locks:
+      # Blocks every input while the firmware's e-stop latch is set.
+      estop:
+        topic: chassis/estop_state
+        timeout: 0.0
+        priority: 255

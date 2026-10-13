@@ -1,0 +1,54 @@
+# ros2_control controllers for the chassis (PLAN.md §7.6).
+# update_rate and diff_drive_controller.publish_rate are overridden by the
+# `control_rate` launch argument; the values here are only the defaults.
+controller_manager:
+  ros__parameters:
+    update_rate: 50
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    diff_drive_controller:
+      type: diff_drive_controller/DiffDriveController
+
+    # Loaded inactive; `ros2 colebot tune` swaps it in for diff_drive_controller (§7.7).
+    wheel_velocity_controller:
+      type: velocity_controllers/JointGroupVelocityController
+
+diff_drive_controller:
+  ros__parameters:
+    left_wheel_names: ["left_wheel_joint"]
+    right_wheel_names: ["right_wheel_joint"]
+
+    # Must match ros/colebot_description/urdf/colebot.urdf.xacro.
+    wheel_separation: 0.30  # TODO: measure from CAD
+    wheel_radius: 0.0762    # 6 in HiGrip
+
+    publish_rate: 50.0
+    odom_frame_id: odom
+    base_frame_id: base_link
+    enable_odom_tf: true  # off once robot_localization owns odom -> base_link (sprint 4)
+    position_feedback: true
+    open_loop: false
+    cmd_vel_timeout: 0.5
+
+    pose_covariance_diagonal: [0.001, 0.001, 1000000.0, 1000000.0, 1000000.0, 0.01]
+    twist_covariance_diagonal: [0.001, 0.001, 1000000.0, 1000000.0, 1000000.0, 0.01]
+
+    # Placeholder limits until the drive is characterized.
+    linear.x.has_velocity_limits: true
+    linear.x.max_velocity: 1.0
+    linear.x.min_velocity: -1.0
+    linear.x.has_acceleration_limits: true
+    linear.x.max_acceleration: 1.0
+    linear.x.min_acceleration: -1.0
+    angular.z.has_velocity_limits: true
+    angular.z.max_velocity: 3.0
+    angular.z.min_velocity: -3.0
+    angular.z.has_acceleration_limits: true
+    angular.z.max_acceleration: 6.0
+    angular.z.min_acceleration: -6.0
+
+wheel_velocity_controller:
+  ros__parameters:
+    joints: ["left_wheel_joint", "right_wheel_joint"]
