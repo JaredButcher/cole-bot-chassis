@@ -1,0 +1,19 @@
+Wheel: 1" x 6"
+Chain and stuff: 0.75"
+
+~Overall ratio 1.5 x 1 x 6"
+~Overall size: 18" x 13" x 6"
+~Frame: 18" x 9.5" x 6"
+~2xwidth = 1.574804"
+
+Cuts: 18",8",4.5" 
+
+T Slot 2020
+20x20mm
+Screws: 5mm diamter, M5
+
+5mm = 0.19..2       
+1cm = 0.393"
+2cm = 0.787"
+
+4.54"/6.11" 0.5" 1.1" 0.43" 0.125" 0.4" .393
